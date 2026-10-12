@@ -17,6 +17,10 @@ from modules.llm import Answer, LLMError, LLMSettings, VisionLLM
 from modules.chapter_tests import selected_ids as selected_ids_for_test
 
 
+# 页面导航也计入等待预算，给共享 CI 的 Chrome 留出余量。
+COURSE_ENTRY_TIMEOUT_MS = 1500
+
+
 def review_config(threshold=0.8):
     config = Config.__new__(Config)
     config._config = configparser.ConfigParser(interpolation=None)
@@ -598,7 +602,7 @@ class ChapterBrowserTests(unittest.IsolatedAsyncioTestCase):
             body='<input id="lUsername"><input type="password"><div class="test-box">directory</div>'))
         with self.assertRaisesRegex(LoginFailure, '视频学习网站仍显示登录表单'):
             await load_course_entries(SimpleNamespace(page=self.page), SimpleNamespace(), 'https://chapter.test/',
-                                      Mock(), 'unused', timeout=500, allow_login=False)
+                                      Mock(), 'unused', timeout=COURSE_ENTRY_TIMEOUT_MS, allow_login=False)
 
     async def test_test_redirect_to_video_platform_restores_login_before_reopening(self):
         authenticated = False
@@ -1050,7 +1054,7 @@ class ChapterBrowserTests(unittest.IsolatedAsyncioTestCase):
         config = SimpleNamespace(config_path=str(Path(self.directory.name) / 'config'))
         with patch('modules.chapter_tests.ensure_chapter_login', AsyncMock()) as login:
             count = await asyncio.wait_for(load_course_entries(SimpleNamespace(page=self.page), config,
-                'https://chapter.test/', Mock(), 'unused', events.append, timeout=400), 3)
+                'https://chapter.test/', Mock(), 'unused', events.append, timeout=COURSE_ENTRY_TIMEOUT_MS), 10)
         self.assertEqual(count, 1)
         self.assertEqual(len(hits), 2)
         self.assertTrue(any('重试' in e['message'] for e in events))
@@ -1078,13 +1082,26 @@ class ChapterBrowserTests(unittest.IsolatedAsyncioTestCase):
         def course(route):
             hits.append(route.request.url)
             return route.fulfill(content_type='text/html', body='''<div class="yidun_popup"><div class="yidun_modal"
-                style="width:100px;height:100px">verification</div></div><div class="test-box"></div>
-                <script>setTimeout(()=>document.querySelector('.yidun_popup').remove(),350)</script>''')
+                style="width:100px;height:100px">verification</div></div><div class="test-box"></div>''')
         await self.page.unroute('https://chapter.test/**')
         await self.page.route('https://chapter.test/**', course)
         events = []
-        self.assertEqual(await asyncio.wait_for(load_course_entries(SimpleNamespace(page=self.page), SimpleNamespace(),
-            'https://chapter.test/', Mock(), 'unused', events.append, timeout=250), 3), 1)
+        verification_requested = asyncio.Event()
+        def on_event(event):
+            events.append(event)
+            if '验证码' in event.get('message', ''):
+                verification_requested.set()
+        async def complete_verification():
+            await verification_requested.wait()
+            await self.page.locator('.yidun_popup').evaluate('element => element.remove()')
+        completion = asyncio.create_task(complete_verification())
+        try:
+            self.assertEqual(await asyncio.wait_for(load_course_entries(SimpleNamespace(page=self.page), SimpleNamespace(),
+                'https://chapter.test/', Mock(), 'unused', on_event, timeout=COURSE_ENTRY_TIMEOUT_MS), 10), 1)
+            await completion
+        finally:
+            completion.cancel()
+            await asyncio.gather(completion, return_exceptions=True)
         self.assertEqual(len(hits), 1)
         self.assertTrue(any('验证码' in e['message'] for e in events))
 
@@ -1099,7 +1116,7 @@ class ChapterBrowserTests(unittest.IsolatedAsyncioTestCase):
         config = SimpleNamespace(config_path=str(Path(self.directory.name) / 'config'))
         with self.assertRaisesRegex(LLMError, '验证码尚未完成'):
             await asyncio.wait_for(load_course_entries(SimpleNamespace(page=self.page), config,
-                'https://chapter.test/', Mock(), 'unused', timeout=500, verification_timeout=200), 3)
+                'https://chapter.test/', Mock(), 'unused', timeout=COURSE_ENTRY_TIMEOUT_MS, verification_timeout=500), 8)
         self.assertEqual(len(hits), 1)
 
     async def test_course_directory_timeout_records_pending_api_without_secrets(self):
@@ -1126,7 +1143,7 @@ class ChapterBrowserTests(unittest.IsolatedAsyncioTestCase):
         try:
             with self.assertRaisesRegex(LLMError, reason):
                 await asyncio.wait_for(load_course_entries(SimpleNamespace(page=self.page), config,
-                    'https://chapter.test/?ticket=fixture-secret', Mock(), 'unused', timeout=400, retries=0), 4)
+                    'https://chapter.test/?ticket=fixture-secret', Mock(), 'unused', timeout=COURSE_ENTRY_TIMEOUT_MS, retries=0), 8)
             diagnostic = next((Path(self.directory.name) / '.autovisor/course-entry-errors').glob('*/diagnostic.json'))
             text = diagnostic.read_text(encoding='utf-8')
             self.assertNotIn('fixture-secret', text)
@@ -1146,7 +1163,7 @@ class ChapterBrowserTests(unittest.IsolatedAsyncioTestCase):
         config = SimpleNamespace(config_path=str(Path(self.directory.name) / 'config'))
         with self.assertRaisesRegex(LLMError, '没有章节测试入口'):
             await asyncio.wait_for(load_course_entries(SimpleNamespace(page=self.page), config,
-                'https://chapter.test/', Mock(), 'unused', timeout=1500), 10)
+                'https://chapter.test/', Mock(), 'unused', timeout=COURSE_ENTRY_TIMEOUT_MS), 10)
         self.assertEqual(len(hits), 2)
 
     async def test_exam_login_refreshes_account_then_reopens_course_entry(self):
