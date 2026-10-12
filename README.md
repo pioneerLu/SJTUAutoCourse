@@ -1,8 +1,6 @@
 # AutoCourse
 
-面向 **Windows**、基于 Chrome 的智慧树课程学习与章节测试工具。通过图形界面添加课程、管理播放任务、配置视觉模型，并查看和复核章节答案。
-
-由 **GaryLu** 维护，项目地址：[pioneerLu/SJTUAutoCourse](https://github.com/pioneerLu/SJTUAutoCourse)。目前提供源码运行方式，发行包以 GitHub Releases 为准。
+基于 Chrome 的智慧树课程学习与章节测试工具。通过图形界面添加课程、管理播放任务、配置视觉模型，并查看和复核章节答案。
 
 ## 可以做什么
 
@@ -13,17 +11,17 @@
 
 ## 开始使用
 
+### Windows
+
 目前仅支持 **Windows**。准备好 **Python 3.10–3.13** 和 **Google Chrome**，打开项目文件夹，在 PowerShell 中运行：
 
 ```powershell
 python -m venv .venv
-.\.venv\Scripts\python.exe -m pip install ".[gui,captcha]"
+.\.venv\Scripts\python.exe -m pip install ".[gui]"
 .\.venv\Scripts\python.exe GUI.py
 ```
 
-从 GitHub 下载 ZIP 后先解压，或使用 Git 克隆项目，再在项目文件夹中运行以上命令。安装命令一次包含 GUI 和自动滑块依赖；使用系统 Chrome 无需额外下载 ChromeDriver 或 Playwright Chromium。
-
-如果已有项目 `.venv`，无需重新创建。依赖已经安装时，直接运行最后一行即可。GUI 和视频子任务会优先使用这个虚拟环境。不使用自动滑块时，可将安装命令中的 `.[gui,captcha]` 改为 `.[gui]`，减少下载量。
+如果已有项目 `.venv`，无需重新创建。依赖已经安装时，直接运行最后一行即可。GUI 和视频子任务会优先使用这个虚拟环境。
 
 ## 第一次使用 GUI
 
@@ -102,7 +100,3 @@ DeepSeek 官方和硅基流动可选择适配器 `auto`，程序按官方域名�
 - [模型接入与中继](docs/llm-relay.md)：接口兼容范围、模型能力要求、返回示例和异常处理。
 
 命令行用户可以运行 `python AutoCourse.py --help` 查看可用参数；指定其他配置文件时使用 `--config 路径`。现有 `build.py` 面向命令行发行版，GUI 打包尚待独立验证。
-
-AutoCourse 使用 [MIT 许可](LICENSE)，新增代码版权署名为 **Copyright (c) 2026 GaryLu**。允许使用、修改、商用和分发；分发时需保留相应版权与许可声明。
-
-项目保留的上游代码及其原始版权、MIT 许可说明见 [NOTICE](NOTICE)。发布源码或二进制时，请一并携带 `LICENSE` 和 `NOTICE`；第三方依赖继续遵循各自许可。
