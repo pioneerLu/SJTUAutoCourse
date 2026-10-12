@@ -1,0 +1,33 @@
+<!doctype html><html lang="zh"><meta charset="utf-8"><title>章节测试离线样例</title>
+<body>
+<ul class="answerCard_list1"><li onclick="show(0)">1</li><li onclick="show(1)">2</li><li onclick="show(2)">3</li></ul>
+<main id="questions"></main>
+<button onclick="prepare(false)">暂存作业</button><button onclick="prepare(true)">提交作业</button>
+<div class="el-message-box" style="display:none"><p id="message"></p><button onclick="finish()">确定</button><button onclick="cancel()">取消</button></div>
+<script>
+window.records = [
+ {kind:'单选题',stem:'题干在关闭的 Shadow DOM 内。',options:[['12','second'],['11','first']],type:'radio'},
+ {kind:'判断题',stem:'判断样例。',options:[['22','错'],['21','对']],type:'radio'},
+ {kind:'多选题',stem:'多选样例。',options:[['32','second'],['33','third'],['31','first']],type:'checkbox'}
+];
+window.lastFinish = null;
+window.current = 0;
+let submit = false;
+records.forEach((q,index)=>{
+ const box=document.createElement('div'); box.className='examPaper_subject'; box.style.display=index?'none':'block';
+ box.innerHTML=`<div class="subject_num"><span id="anchor_${index}">${index+1}${index===0?'.':''}</span></div><div class="subject_type">【${q.kind}】 (2分)</div><div class="subject_describe"></div><div class="subject_node"></div>`;
+ const shadow=box.querySelector('.subject_describe').attachShadow({mode:'closed'});
+ shadow.innerHTML=`<p>${q.stem}</p>`;
+ q.options.forEach(([id,text],i)=>{
+  const label=document.createElement('div'); label.className='label';
+  label.innerHTML=`<input type="${q.type}" name="q${index}" value="${id}" style="display:none">${String.fromCharCode(65+i)}. ${text}`;
+  label.onclick=()=>{const input=label.querySelector('input');if(q.type==='radio'){box.querySelectorAll('input').forEach(e=>e.checked=false);input.checked=true;}else input.checked=!input.checked;};
+  box.querySelector('.subject_node').append(label);
+ });
+ document.querySelector('#questions').append(box);
+});
+function show(index){current=index;document.querySelectorAll('.examPaper_subject').forEach((q,i)=>q.style.display=i===index?'block':'none');}
+function prepare(value){submit=value;document.querySelector('#message').innerText=window.forceUnanswered?'还有未作答题目':'是否确定保存？';document.querySelector('.el-message-box').style.display='block';}
+function cancel(){document.querySelector('.el-message-box').style.display='none';}
+async function finish(){cancel();lastFinish=submit?'submitted':'saved';await fetch('/answer/'+(submit?'submit':'temporarySave'),{method:'POST'});}
+</script>

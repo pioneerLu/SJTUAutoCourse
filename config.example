@@ -1,0 +1,86 @@
+[user-account]
+;配置账号密码，留空则打开网页后需手动登录
+username =
+password =
+
+[browser-option]
+;配置浏览器,可选 Edge 或 Chrome
+driver = Edge
+;指定浏览器所在路径,不填则使用默认路径
+EXE_PATH =
+
+[script-option]
+;是否自动过登录时的滑块验证(默认:True)
+enableAutoCaptcha = True
+;是否自动隐藏浏览器窗口(默认:False)
+enableHideWindow = False
+;兼容旧配置的保留项，当前版本不展示赞赏码
+showDonateCode = False
+
+[course-option]
+;限制每门课程刷课时长/min (不限制:0)
+limitMaxTime = 30
+;限定播放倍速 (最高:1.8)
+limitSpeed = 1.0
+;设置是否静音播放 (默认:True)
+soundOff = True
+
+[course-url]
+;配置要学习的课程链接,支持(智慧)共享课
+;可继续添加多个课程链接
+URL1 =
+URL2 =
+URL3 =
+URL4 =
+URLn =
+
+[llm-option]
+;多模态 Chat Completions 兼容接口；非流式返回，Key 使用 Bearer 认证
+;填服务商实际基础地址（如 https://api.example.com/v1）或完整 /chat/completions
+;DeepSeek 官方：https://api.deepseek.com；硅基流动：https://api.siliconflow.cn/v1
+;硅基流动官方根地址可自动补 /v1，未知网关不补；原生 Responses/Anthropic/Gemini 地址不适用
+url =
+key =
+;模型需支持 Base64 图片、读图和按提示输出带置信度的答案 JSON
+;填服务商准确模型名；也可用 AUTOCOURSE_LLM_MODEL 环境变量；详见 docs/llm-relay.md
+model =
+;每次 LLM 请求超时秒数
+timeout = 90
+;低于该置信度的题目留空，其余题目继续处理
+minConfidence = 0.8
+;默认仅补空题和低置信度题；True 重新作答并允许替换已有答案
+overwriteAnswers = False
+;False 只回填并暂存作业，True 允许低置信度题留空交卷
+autoSubmit = False
+;仅当服务商支持 response_format=json_object 时启用
+jsonMode = False
+;auto 先按官方域名识别服务商，再按模型名选择适配器
+;支持 auto/generic/minimax/qwen/glm/kimi/deepseek/siliconflow
+;适配器不保证模型具备图片能力；首次接入未知服务可选 generic
+adapter = auto
+;auto 兼容 jsonMode；prompt 提示词约束，json 为 JSON 模式，schema 为结构约束
+;首次接入可选 prompt；json/schema 需服务商支持对应 response_format
+;DeepSeek 官方选 schema 时转为 json_object，保留本地校验
+responseMode = auto
+;GUI 当前选中的模型槽（1 或 2）；旧的 model 配置仍作为槽 1 的后备
+modelProfile = 1
+;失败后等待秒数，下一次重试等待翻倍
+retryDelay = 15
+;题目请求之间的间隔，用于减少接口 503
+requestInterval = 30
+
+[llm-model-1]
+model =
+;留空时继承 llm-option 的公共接口和 Key
+url =
+key =
+;留空继承公共中继设置
+adapter =
+responseMode =
+
+[llm-model-2]
+model =
+url =
+key =
+adapter =
+responseMode =

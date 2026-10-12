@@ -1,0 +1,55 @@
+# 本地配置、配置备份与凭据；仅公开空模板。
+/config
+/config.*
+!/config.example
+/configs.ini
+.env
+.env.*
+!.env.example
+cookies*.json
+
+# 用户数据、答案、截图、浏览器资料和诊断日志。
+/data/*
+!/data/mirrors.json
+/.autovisor/
+/.autocourse/
+/captcha/
+/logs/
+/preview/
+*.log
+
+# 下载依赖、虚拟环境与构建产物。
+/packages/
+/.venv/
+/venv/
+/build/
+/dist/
+*.egg-info/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+*.tmp
+*.bak
+*.orig
+/AutoCourse.spec
+
+# 内部阶段记录保留在本地，不随源码发布。
+/docs/project-status.md
+
+# 资源仅纳入现有运行与打包所需文件，避免误收截图。
+/resources/*
+!/resources/stealth.min.js
+!/resources/zhs.ico
+
+# 编辑器和操作系统本地文件。
+.obsidian/
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+Desktop.ini

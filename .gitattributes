@@ -1,0 +1,10 @@
+# 源码统一 LF；Git 自动识别二进制，避免改写资源文件。
+* text=auto eol=lf
+*.ico binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.woff binary
+*.woff2 binary
