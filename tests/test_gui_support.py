@@ -495,7 +495,7 @@ class GuiTests(unittest.TestCase):
         self.app.poll()
         self.assertEqual(len(self.app.answer_tree.get_children()), 1)
         self.assertIn('A. answer', self.app.answer_tree.item('r0', 'values'))
-        self.assertEqual(self.app.result_rows['r0'][1], directory)
+        self.assertEqual(self.app.result_rows['r0'][1], directory.resolve())
 
     def test_save_model_error_is_visible(self):
         self.app.controller.events.put({'kind': 'error', 'name': '回填并暂存',
@@ -562,7 +562,7 @@ class GuiTests(unittest.TestCase):
         record, directory = self.app.result_rows['r0']
         self.assertEqual(record['question']['question_id'], 'legacy-q1')
         self.assertTrue(record['meets_confidence'])
-        self.assertEqual(directory, self.path)
+        self.assertEqual(directory, self.path.resolve())
         self.assertEqual(questions_path.read_bytes(), original)
 
     def test_history_does_not_match_wrong_id_by_number_or_partially_load(self):

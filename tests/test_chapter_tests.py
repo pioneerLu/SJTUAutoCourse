@@ -268,7 +268,7 @@ class ChapterBrowserTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(result['filled_count'], 2)
         latest = json.loads((current / 'review.json').read_text(encoding='utf-8'))
         self.assertEqual(latest[0]['model'], 'older-model')
-        self.assertEqual(latest[0]['source_directory'], str(old))
+        self.assertEqual(latest[0]['source_directory'], str(old.resolve()))
         calls.clear()
         self.assertEqual(await solve_exam(self.page, current, solver, overwrite=True), 'saved')
         self.assertEqual(calls, [1, 2, 3])
