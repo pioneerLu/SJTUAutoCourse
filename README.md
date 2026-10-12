@@ -93,6 +93,18 @@ DeepSeek 官方和硅基流动可选择适配器 `auto`，程序按官方域名�
 
 目前适配智慧树的智慧共享课、翻转课和融合共享课视频页面；章节测试只处理已适配的作业页面和题型。AI 课程、非视频章节及其他页面不能保证支持。页面改版或出现未适配验证时，需人工处理。
 
+## 交流与二次开发
+
+欢迎 Fork 本项目进行二次开发，改进界面、扩展功能、适配更多课程页面或模型接口！也欢迎通过 [Pull Request](https://github.com/pioneerLu/SJTUAutoCourse/pulls) 分享你的改进。项目使用 [MIT 许可](LICENSE)，修改和分发时请保留相关版权及许可声明，包括 [NOTICE](NOTICE) 中的上游声明。
+
+遇到 Bug、有功能建议，或想交流使用体验，都欢迎 [提交 Issue](https://github.com/pioneerLu/SJTUAutoCourse/issues)。反馈问题时，尽量提供：
+
+- Windows、Python 及所用浏览器的版本。
+- 复现步骤、预期结果和实际表现。
+- 相关错误日志或截图；模型接口问题可注明服务商和模型名称。
+
+提交前请遮盖账号、密码、API Key、Cookies、个人信息以及链接中的登录凭证，不要直接上传完整的 `config` 或 Cookies 文件。
+
 ## 更多说明
 
 - [章节测试指南](docs/chapter-tests.md)：配置、答案复用、批量操作与诊断。
