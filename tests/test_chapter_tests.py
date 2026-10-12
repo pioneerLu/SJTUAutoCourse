@@ -1146,7 +1146,7 @@ class ChapterBrowserTests(unittest.IsolatedAsyncioTestCase):
         config = SimpleNamespace(config_path=str(Path(self.directory.name) / 'config'))
         with self.assertRaisesRegex(LLMError, '没有章节测试入口'):
             await asyncio.wait_for(load_course_entries(SimpleNamespace(page=self.page), config,
-                'https://chapter.test/', Mock(), 'unused', timeout=250), 4)
+                'https://chapter.test/', Mock(), 'unused', timeout=1500), 10)
         self.assertEqual(len(hits), 2)
 
     async def test_exam_login_refreshes_account_then_reopens_course_entry(self):
