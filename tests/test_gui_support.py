@@ -15,6 +15,7 @@ from modules.gui_app import AutoCourseApp, configure_dpi
 from modules.configs import Config
 from modules.llm import LLMSettings, LLMError
 from modules.runtime_env import project_python, using_project_python
+from modules.browser import _launch_args
 
 
 TEMPLATE = '''[user-account]
@@ -156,6 +157,83 @@ class GuiTests(unittest.TestCase):
     def tearDown(self):
         self.app.close()
         self.temp.cleanup()
+
+    def test_browser_choice_is_saved_and_restored_for_both_browsers(self):
+        self.assertEqual(tuple(self.app.browser_select.cget('values')), ('Chrome', 'Edge'))
+        self.assertEqual(str(self.app.browser_select.cget('state')), 'readonly')
+        for browser, channel in (('Edge', 'msedge'), ('Chrome', 'chrome')):
+            with self.subTest(browser=browser):
+                self.app.browser_select.set(browser)
+                self.assertTrue(self.app.save_config(quiet=True))
+                config = Config(self.app.store.path, Path(__file__).resolve().parents[1] / 'data/mirrors.json')
+                self.assertEqual(config.driver, browser.lower())
+                self.assertEqual(_launch_args(config)['channel'], channel)
+                self.app.close()
+                self.root = tk.Tk()
+                self.root.withdraw()
+                self.app = AutoCourseApp(self.root, self.path)
+                self.root.update()
+                self.assertEqual(self.app.browser_select.get(), browser)
+
+    def test_switching_browser_clears_old_executable_but_keeps_current_browser_path(self):
+        executable = self.app.variable('browser-option', 'EXE_PATH')
+        executable.set(r'C:\custom\chrome.exe')
+        self.app.browser_select.set('Chrome')
+        self.assertEqual(executable.get(), r'C:\custom\chrome.exe')
+        self.app.browser_select.set('Edge')
+        self.assertEqual(executable.get(), '')
+        executable.set(r'C:\custom\msedge.exe')
+        self.assertTrue(self.app.save_config(quiet=True))
+        self.assertEqual(self.app.store.get('browser-option', 'EXE_PATH'), r'C:\custom\msedge.exe')
+        self.app.browser_select.set('Chrome')
+        self.assertEqual(executable.get(), '')
+
+    def test_browser_selection_and_video_start_remain_visible_at_minimum_window(self):
+        self.app.tabs.select(self.app.video_tab)
+        self.root.geometry('980x700')
+        self.root.update()
+        tab = self.app.video_tab
+        for widget in (self.app.browser_select, self.app.action_buttons[0]):
+            self.assertTrue(widget.winfo_ismapped())
+            self.assertGreaterEqual(widget.winfo_rooty(), tab.winfo_rooty())
+            self.assertLessEqual(widget.winfo_rooty() + widget.winfo_height(),
+                                 tab.winfo_rooty() + tab.winfo_height())
+
+    def test_switching_browser_stops_reusing_previous_cdp_connection(self):
+        self.app.store.save({'browser-option': {'attachExistingChrome': 'True'}}, self.app.store.courses())
+        self.app.browser_select.set('Chrome')
+        self.assertTrue(self.app.save_config(quiet=True))
+        config = Config(self.app.store.path, Path(__file__).resolve().parents[1] / 'data/mirrors.json')
+        self.assertTrue(config.attach_existing_chrome)
+        self.app.browser_select.set('Edge')
+        self.assertTrue(self.app.save_config(quiet=True))
+        config = Config(self.app.store.path, Path(__file__).resolve().parents[1] / 'data/mirrors.json')
+        self.assertEqual(config.driver, 'edge')
+        self.assertFalse(config.attach_existing_chrome)
+        self.assertEqual(_launch_args(config)['channel'], 'msedge')
+
+    def test_existing_edge_config_and_custom_path_are_restored_without_reset(self):
+        template = TEMPLATE.replace('driver=Chrome', 'driver= eDgE ').replace('EXE_PATH=', r'EXE_PATH=C:\custom\msedge.exe')
+        (self.path / 'config').write_text(template, encoding='utf-8')
+        self.app.close()
+        self.root = tk.Tk()
+        self.root.withdraw()
+        self.app = AutoCourseApp(self.root, self.path)
+        self.root.update()
+        self.assertEqual(self.app.browser_select.get(), 'Edge')
+        self.assertEqual(self.app.variable('browser-option', 'EXE_PATH').get(), r'C:\custom\msedge.exe')
+        self.assertTrue(self.app.save_config(quiet=True))
+        self.assertEqual(self.app.store.get('browser-option', 'driver'), 'Edge')
+        self.assertEqual(self.app.store.get('browser-option', 'EXE_PATH'), r'C:\custom\msedge.exe')
+
+    def test_invalid_browser_does_not_write_config(self):
+        previous = (self.path / 'config').read_bytes()
+        self.app.browser_select.set('Firefox')
+        with patch('modules.gui_app.messagebox.showerror') as error:
+            self.assertFalse(self.app.save_config(quiet=True))
+        self.assertIn('Chrome', error.call_args.args[1])
+        self.assertIn('Edge', error.call_args.args[1])
+        self.assertEqual((self.path / 'config').read_bytes(), previous)
 
     def test_formatted_course_input_is_rewritten_without_clearing_same_course(self):
         url = self.app.store.courses()[0]

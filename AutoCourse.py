@@ -242,7 +242,7 @@ def prepare_captcha_modules(config):
     try:
         modules = installer.start(config)
     except RuntimeError as exc:
-        logger.warn(f"自动滑块不可用：{exc} 本次继续运行，请在 Chrome 中手动完成验证。", shift=True)
+        logger.warn(f"自动滑块不可用：{exc} 本次继续运行，请在浏览器中手动完成验证。", shift=True)
         logger.event("滑块任务", 状态="改用手动验证", 原因=str(exc))
         return []
     logger.info("自动滑块依赖已准备好。")
@@ -376,7 +376,7 @@ def parse_args():
     parser.add_argument(
         "--check-browser",
         action="store_true",
-        help="只检查 Chrome 启动和智慧树登录状态",
+        help="只检查浏览器启动和智慧树登录状态",
     )
     parser.add_argument(
         "--check-course",
@@ -470,7 +470,7 @@ def cli() -> int:
     except TargetClosedError as exc:
         if "BrowserType.launch" in repr(exc):
             logger.log_exception("浏览器相关流程异常结束.", exc)
-            logger.error("浏览器启动失败,请检查 Chrome 或 CDP 配置!")
+            logger.error("浏览器启动失败,请检查浏览器或 CDP 配置!")
         else:
             logger.debug(f"浏览器关闭结束运行: {logger.summarize_exception(exc)}")
         exit_code = 1

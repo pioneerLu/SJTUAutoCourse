@@ -23,7 +23,7 @@ async def wait_for_chapter_verification(page, callback=None, *, timeout=VERIFICA
         raise LLMError('测试窗口已关闭，无法继续等待安全验证。')
     if not await has_visible_verification(page):
         return False
-    _notify(callback, state='等待验证', message=f'检测到安全验证，已暂停；请在 Chrome 完成验证，最多等待 {timeout / 1000:g} 秒。')
+    _notify(callback, state='等待验证', message=f'检测到安全验证，已暂停；请在浏览器完成验证，最多等待 {timeout / 1000:g} 秒。')
     try:
         await page.bring_to_front()
     except Error:

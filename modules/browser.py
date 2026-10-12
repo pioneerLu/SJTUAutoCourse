@@ -102,16 +102,16 @@ async def create_browser_session(
         cdp_endpoint = resolve_cdp_endpoint(config.cdp_url)
         if not is_loopback_cdp_endpoint(cdp_endpoint):
             raise RuntimeError("为避免凭据泄露，CDP 端点只允许连接本机 loopback 地址")
-        logger.info("正在连接现有 Chrome 的远程调试端点...")
+        logger.info("正在连接现有浏览器 的远程调试端点...")
         page = None
         try:
             browser = await playwright.chromium.connect_over_cdp(cdp_endpoint)
             if not browser.contexts:
-                raise RuntimeError("Chrome CDP 连接成功,但没有可用浏览器上下文")
+                raise RuntimeError("浏览器 CDP 连接成功,但没有可用浏览器上下文")
             context = browser.contexts[0]
             page = await context.new_page()
             attached = True
-            logger.info("已连接现有 Chrome,将复用当前登录状态.")
+            logger.info("已连接现有浏览器,将复用当前登录状态.")
             await _prepare_page(page, logger)
             return BrowserSession(browser, context, page, attached)
         except BaseException as exc:
@@ -123,7 +123,7 @@ async def create_browser_session(
             if not isinstance(exc, Exception) or isinstance(exc, RuntimeError):
                 raise
             raise RuntimeError(
-                "无法连接现有 Chrome; 请启用 chrome://inspect/#remote-debugging, "
+                "无法连接现有浏览器; 请确认浏览器已启用远程调试, "
                 "或将 attachExistingChrome 设为 False"
             ) from exc
     else:

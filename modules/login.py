@@ -53,7 +53,7 @@ async def wait_for_login_complete(
     page: Page, timeout: float = 24 * 3600 * 1000, *, page_candidates=None, notify=None,
     captcha_modules=None
 ) -> Page:
-    """等待完成整条 SSO 跳转；Chrome 错误页不代表已登录。"""
+    """等待完成整条 SSO 跳转；浏览器错误页不代表已登录。"""
     def destination(url):
         hostname = urlparse(url).hostname or ''
         return (hostname == 'zhihuishu.com' or hostname.endswith('.zhihuishu.com')) and not is_login_page(url)
@@ -67,11 +67,11 @@ async def wait_for_login_complete(
             if notify and passed:
                 notify('登录滑块验证已通过，正在等待登录跳转…')
             elif notify and not candidate.is_closed() and is_login_page(candidate.url):
-                notify('自动滑块尝试未通过，请在 Chrome 中手动完成验证；完成后程序会继续。')
+                notify('自动滑块尝试未通过，请在浏览器中手动完成验证；完成后程序会继续。')
         except Exception:
             # 自动验证失败不终止登录，保留手动处理的机会；不输出认证 URL。
             if notify and not candidate.is_closed() and is_login_page(candidate.url):
-                notify('自动滑块处理失败，请在 Chrome 中手动完成验证；完成后程序会继续。')
+                notify('自动滑块处理失败，请在浏览器中手动完成验证；完成后程序会继续。')
 
     def watch(candidate):
         if id(candidate) in watched or not hasattr(candidate, 'on'):
@@ -117,10 +117,10 @@ async def wait_for_login_complete(
             else:
                 closed_at = None
             if notify and monotonic() - last_notice >= 30:
-                notify('登录仍未完成，请检查 Chrome 中的验证码或登录服务状态；完成后程序会继续。')
+                notify('登录仍未完成，请检查浏览器中的验证码或登录服务状态；完成后程序会继续。')
                 last_notice = monotonic()
             await asyncio.sleep(0.25)
-        raise LoginTimeout('登录等待超时，请检查 Chrome 中的验证码或登录网关错误。', page)
+        raise LoginTimeout('登录等待超时，请检查浏览器中的验证码或登录网关错误。', page)
     finally:
         for task in captcha_tasks.values():
             if not task.done():
@@ -161,15 +161,15 @@ async def complete_standard_login(page, username='', password='', *, notify=None
             submit = await page.wait_for_selector(LOGIN_SUBMIT_SELECTOR, state='visible', timeout=30000)
             await submit.click()
             if notify:
-                notify('已使用配置账号登录；自动滑块会尝试验证，失败时请在 Chrome 中完成验证。'
-                       if captcha_modules else '已使用配置账号登录；如出现验证码，请在 Chrome 中完成验证。')
+                notify('已使用配置账号登录；自动滑块会尝试验证，失败时请在浏览器中完成验证。'
+                       if captcha_modules else '已使用配置账号登录；如出现验证码，请在浏览器中完成验证。')
         except TimeoutError:
             if notify:
-                notify('未找到自动登录控件，请在 Chrome 中手动完成登录。')
+                notify('未找到自动登录控件，请在浏览器中手动完成登录。')
         except Error:
             problem = await login_page_error(page)
-            raise LoginFailure(problem or '登录控件操作或登录跳转失败，请检查 Chrome 中的登录服务状态。', page) from None
+            raise LoginFailure(problem or '登录控件操作或登录跳转失败，请检查浏览器中的登录服务状态。', page) from None
     elif notify:
-        notify('请在 Chrome 的常规登录页手动完成登录。')
+        notify('请在浏览器的常规登录页手动完成登录。')
     return await wait_for_login_complete(page, timeout=timeout, page_candidates=page_candidates,
                                         notify=notify, captcha_modules=captcha_modules)

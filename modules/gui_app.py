@@ -25,6 +25,7 @@ from modules.llm import LLMSettings, VisionLLM, Question, Answer, LLMError, answ
 
 MODES = {'生成答案预览': 'preview', '回填并暂存': 'save', '自动交卷': 'submit', '仅导出题目': 'export'}
 MODEL_LIST = ('qwen3-vl-plus', 'kimi-for-coding', 'qwen3.8-max', 'MiniMax-M3')
+BROWSER_CHOICES = ('Chrome', 'Edge')
 RESULT_STATES = {'preview': '预览完成', 'preview_partial': '部分失败', 'saved': '已暂存',
                  'submitted': '已交卷', 'already_submitted': '已交卷（跳过）',
                  'exported': '已导出', 'failed': '失败'}
@@ -111,7 +112,7 @@ class AutoCourseApp:
         header = ttk.Frame(self.root, padding=(20, 14))
         header.pack(fill='x')
         ttk.Label(header, text='AutoCourse', font=('Microsoft YaHei', 20, 'bold')).pack(side='left')
-        ttk.Label(header, text='Chrome · 视频学习与章节测试', foreground='#64748b').pack(side='left', padx=20)
+        ttk.Label(header, text='Chrome / Edge · 视频学习与章节测试', foreground='#64748b').pack(side='left', padx=20)
         ttk.Button(header, text='保存配置', command=self.save_config).pack(side='right')
         ttk.Checkbutton(header, text='显示课程链接', variable=self.show_courses,
                         command=self.toggle_course_links).pack(side='right', padx=15)
@@ -165,20 +166,39 @@ class AutoCourseApp:
         self.field(form, 1, '密码', 'user-account', 'password', secret=True)
         self.field(form, 2, '每门课时限 / 分钟（0 不限）', 'course-option', 'limitMaxTime', '0')
         self.field(form, 3, '播放倍速（0.5～1.8）', 'course-option', 'limitSpeed', '1.0')
-        self.field(form, 4, 'Chrome 可执行文件（可留空）', 'browser-option', 'EXE_PATH')
+        driver = self.variable('browser-option', 'driver', 'Chrome')
+        driver.set({name.lower(): name for name in BROWSER_CHOICES}.get(driver.get().strip().lower(), 'Chrome'))
+        ttk.Label(form, text='浏览器 / 可执行文件（可留空）').grid(
+            row=4, column=0, sticky='w', padx=(0, 15), pady=4)
+        browser_controls = ttk.Frame(form)
+        browser_controls.grid(row=4, column=1, sticky='ew', pady=4)
+        self.browser_select = ttk.Combobox(browser_controls, textvariable=driver, values=BROWSER_CHOICES,
+                                          state='readonly', width=10)
+        self.browser_select.pack(side='left', padx=(0, 8))
+        ttk.Entry(browser_controls, textvariable=self.variable('browser-option', 'EXE_PATH')).pack(
+            side='left', fill='x', expand=True)
+        self._selected_browser = driver.get().lower()
+        driver.trace_add('write', self.browser_changed)
         choices = ttk.Frame(self.video_tab)
-        choices.pack(fill='x', pady=12)
+        choices.pack(fill='x', pady=2)
         for label, section, option, default in [('静音', 'course-option', 'soundOff', 'True'),
             ('隐藏浏览器窗口', 'script-option', 'enableHideWindow', 'False'),
             ('自动滑块', 'script-option', 'enableAutoCaptcha', 'False')]:
             ttk.Checkbutton(choices, text=label, variable=self.variable(section, option, default),
                 onvalue='True', offvalue='False').pack(side='left', padx=(0, 20))
         ttk.Checkbutton(self.video_tab, text='视频任务正常结束后，运行已勾选的章节测试（使用章节测试页的模式）',
-            variable=self.follow_tests).pack(anchor='w', pady=8)
+            variable=self.follow_tests).pack(anchor='w', pady=2)
         controls = ttk.Frame(self.video_tab)
-        controls.pack(fill='x', pady=12)
+        controls.pack(fill='x', pady=2)
         self.button(controls, '保存并开始视频学习', self.start_video)
         self.button(controls, '打开日志目录', lambda: os.startfile(self.project_root / 'logs'))
+
+    def browser_changed(self, *_):
+        driver = self.variable('browser-option', 'driver').get().strip().lower()
+        if driver != self._selected_browser:
+            self.variable('browser-option', 'EXE_PATH').set('')
+            self.variable('browser-option', 'attachExistingChrome', 'False').set('False')
+            self._selected_browser = driver
 
     def _build_tests(self):
         self.tests_tab.columnconfigure(0, weight=1)
@@ -323,6 +343,10 @@ class AutoCourseApp:
             return False
         try:
             courses = normalize_course_urls(self.course_text.get('1.0', 'end'))
+            driver = self.variable('browser-option', 'driver').get().strip().lower()
+            browser_names = {name.lower(): name for name in BROWSER_CHOICES}
+            if driver not in browser_names:
+                raise ValueError('请选择 Chrome 或 Edge 浏览器。')
             for section, option, low, high in [('course-option', 'limitMaxTime', 0, None),
                 ('course-option', 'limitSpeed', 0.5, 1.8), ('llm-option', 'minConfidence', 0, 1),
                 ('llm-option', 'timeout', 0.01, None), ('llm-option', 'retryDelay', 0, None),
@@ -333,7 +357,7 @@ class AutoCourseApp:
             values = {}
             for (section, option), variable in self.vars.items():
                 values.setdefault(section, {})[option] = variable.get().strip() if option != 'password' else variable.get()
-            values.setdefault('browser-option', {})['driver'] = 'Chrome'
+            values.setdefault('browser-option', {})['driver'] = browser_names[driver]
             values.setdefault('llm-option', {})['modelProfile'] = self.active_profile.get()
             previous_courses = self.store.courses()
             try:

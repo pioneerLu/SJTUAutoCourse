@@ -97,7 +97,7 @@ async def guard_request(route, read_only=False):
 
 
 class ChapterBrowserScope:
-    """只保护任务根页面及其弹窗，不改变共用 Chrome 的其他标签页。"""
+    """只保护任务根页面及其弹窗，不改变共用浏览器的其他标签页。"""
     def __init__(self, session, read_only):
         self.session = session
         self.context = session.context
@@ -649,7 +649,7 @@ async def ensure_chapter_login(session, config, logger, cookie_path, callback=No
         try:
             response = await session.page.goto(login_url, wait_until='domcontentloaded', timeout=30000)
         except Error:
-            raise LoginFailure('无法打开常规登录页，请检查 Chrome 中的登录服务或网络状态。', session.page) from None
+            raise LoginFailure('无法打开常规登录页，请检查浏览器中的登录服务或网络状态。', session.page) from None
         if response and response.status >= 400:
             if response.status in (400, 401, 403) and await reset_login_cookies():
                 notify(f'常规登录页返回 HTTP {response.status}，清理当前程序会话的失效登录状态后重试一次…')
@@ -673,7 +673,7 @@ async def ensure_chapter_login(session, config, logger, cookie_path, callback=No
             try:
                 captcha_modules = installer.start(config)
             except (RuntimeError, OSError):
-                notify('自动滑块依赖未就绪，请运行 uv sync --extra gui --extra captcha；本次可在 Chrome 中手动验证。')
+                notify('自动滑块依赖未就绪，请运行 uv sync --extra gui --extra captcha；本次可在浏览器中手动验证。')
         destination = await complete_standard_login(session.page, getattr(config, 'username', ''),
                                       getattr(config, 'password', ''), notify=notify,
                                       timeout=login_timeout, page_candidates=candidates,
@@ -703,7 +703,7 @@ async def open_authenticated_course(session, config, course_url, logger, cookie_
             and not page.is_closed() and page.url == cached['location'] and not is_login_page(page.url)):
         try:
             if await has_visible_verification(page):
-                raise LLMError('课程页出现安全验证，请在 Chrome 中完成验证后重试。')
+                raise LLMError('课程页出现安全验证，请在浏览器中完成验证后重试。')
             login_visible = await page.locator('#lUsername,input[name="mobile"]').first.is_visible()
             names = await chapter_test_names(page)
             if names and not login_visible:
@@ -806,7 +806,7 @@ async def load_course_entries(session, config, course_url, logger, cookie_path, 
                 if state['verification']:
                     if not verification_seen:
                         verification_seen = True
-                        notify(f'课程页出现验证码，请在 Chrome 中完成验证；程序会继续等待，最多 {verification_timeout / 1000:g} 秒。')
+                        notify(f'课程页出现验证码，请在浏览器中完成验证；程序会继续等待，最多 {verification_timeout / 1000:g} 秒。')
                         deadline = monotonic() + verification_timeout / 1000
                 elif state['login_form']:
                     if allow_login and not login_refreshed and getattr(config, 'login_url', None):
@@ -831,7 +831,7 @@ async def load_course_entries(session, config, course_url, logger, cookie_path, 
         if page.is_closed():
             reason = '课程窗口已关闭，请重新运行。'
         elif is_login_page(page.url):
-            reason = '课程页登录尚未完成，请检查 Chrome 中的登录页面。'
+            reason = '课程页登录尚未完成，请检查浏览器中的登录页面。'
         elif account_status:
             reason = f'视频学习网站账号或课程接口返回 HTTP {account_status}，当前登录或访问状态尚未就绪。'
         elif state.get('verification'):
@@ -843,7 +843,7 @@ async def load_course_entries(session, config, course_url, logger, cookie_path, 
         elif state.get('chapter_count'):
             reason = '课程目录中没有章节测试入口，可能尚未开放或页面结构已变化。'
         else:
-            reason = '课程目录没有加载完成，请检查 Chrome 中的网页及网络后重试。'
+            reason = '课程目录没有加载完成，请检查浏览器中的网页及网络后重试。'
         directory = Path(getattr(config, 'config_path', 'config')).resolve().parent / '.autovisor' / 'course-entry-errors' / datetime.now().strftime('%Y%m%d-%H%M%S-%f')
         directory.mkdir(parents=True, exist_ok=True)
         write_json(directory / 'diagnostic.json', {'stage': '加载课程目录', 'reason': reason,
@@ -965,7 +965,7 @@ async def test_page_problem(page):
     if page.url in ('about:blank', ''):
         return '章节测试窗口仍为空白，跳转未完成或被阻止，请重试。'
     if state['login']:
-        return '章节测试页要求重新登录，请在 Chrome 中完成登录后重试。' + (
+        return '章节测试页要求重新登录，请在浏览器中完成登录后重试。' + (
             f' 登录跳转错误：{state["navigation_error"]}。' if state['navigation_error'] else '')
     if state['question_count'] and not state['has_submit']:
         reason = '测试页已显示题目，但没有可用的“提交作业”按钮，无法确认可作答状态。'
@@ -989,7 +989,7 @@ async def open_chapter_test(course_page, index, callback=None, *, scope=None, au
         await scope.prepare_page(page)
     emit(callback, 'test_navigation', message='正在等待章节测试页完成跳转…')
     # SSO 会经过数个域名，其中一次导航可能返回 HTTP 错误。等待 URL 的导航承诺
-    # 会直接抛错并关闭浏览器；观察当前页面可让用户在 Chrome 中重试登录。
+    # 会直接抛错并关闭浏览器；观察当前页面可让用户在浏览器中重试登录。
     is_exam = lambda url: chapter_page_status(str(url)) == 'answer'
     is_test_target = lambda url: chapter_page_status(str(url)) in ('answer', 'already_submitted')
     login_hosts = {'login.zhihuishu.com', 'passport.zhihuishu.com', 'cloudapi.polymas.com'}
@@ -1009,7 +1009,7 @@ async def open_chapter_test(course_page, index, callback=None, *, scope=None, au
             if not login_seen:
                 deadline = monotonic() + 10 * 60
                 login_seen = True
-            emit(callback, 'test_navigation', message='登录服务返回错误；请在 Chrome 窗口重试登录，程序会继续等待。')
+            emit(callback, 'test_navigation', message='登录服务返回错误；请在浏览器窗口重试登录，程序会继续等待。')
 
     def on_response(response):
         try:
@@ -1089,7 +1089,7 @@ async def open_chapter_test(course_page, index, callback=None, *, scope=None, au
                     raise LoginFailure(problem, page)
             if is_login_page(current):
                 if not login_seen:
-                    emit(callback, 'test_navigation', message='正在等待章节登录跳转；如停留在登录或验证码页，请在 Chrome 中手动登录，程序会继续等待。')
+                    emit(callback, 'test_navigation', message='正在等待章节登录跳转；如停留在登录或验证码页，请在浏览器中手动登录，程序会继续等待。')
                     deadline = monotonic() + 10 * 60
                     login_seen = True
             elif is_exam(current):
@@ -1323,7 +1323,7 @@ class ChapterReviewBrowser:
         if self.session is not None:
             browser = getattr(self.session, 'browser', None)
             if browser is not None and not browser.is_connected():
-                self.logger.info('Chrome 连接已断开，为下一章节重新建立会话；不会重发上一章节。')
+                self.logger.info('浏览器连接已断开，为下一章节重新建立会话；不会重发上一章节。')
                 await self.close()
             elif not self.session.page.is_closed():
                 return self.session, self.scope

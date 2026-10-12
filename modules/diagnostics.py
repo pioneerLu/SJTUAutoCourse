@@ -31,7 +31,7 @@ async def check_browser(config, logger, cookie_path: str) -> int:
             )
             await session.page.wait_for_timeout(1000)
             if is_login_page(session.page.url):
-                logger.warn("Chrome 已连接,但智慧树登录状态无效.", shift=True)
+                logger.warn("浏览器已连接,但智慧树登录状态无效.", shift=True)
                 return 1
             logger.info(f"浏览器检查通过: {await session.page.title()}", shift=True)
             return 0
